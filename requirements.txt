@@ -1,0 +1,6 @@
+# Core Python dependencies
+Tested version constraints will be added after environment verification.
+numpy
+torch
+timm
+safetensors
