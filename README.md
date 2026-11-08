@@ -2,60 +2,96 @@
 
 ## Training-Free Cross-Window Consensus for Open-Vocabulary Remote Sensing Segmentation
 
-WinCoP refines open-vocabulary semantic segmentation predictions
-through alternating cross-window coordinate consensus and
-DINOv3-guided within-window structural propagation.
+WinCoP is a training-free approach for refining open-vocabulary
+remote sensing semantic segmentation using cross-window coordinate
+consensus and DINOv3-guided structural propagation.
 
-## Method
+## Overview
 
-WinCoP uses frozen SegEarth-OV semantic responses and frozen
-DINOv3 visual features. No additional model training is required.
+WinCoP combines frozen SegEarth-OV semantic responses with
+frozen DINOv3 visual features.
 
-Starting from patch-level semantic responses S:
+At each iteration, semantic states are aggregated across windows
+at corresponding global patch coordinates and then propagated
+through DINOv3-derived within-window relationships.
 
     X_0 = S
     X_(t+1) = A_D P(X_t)
 
-P aggregates semantic states sharing global patch coordinates.
-A_D propagates information using DINOv3 patch relationships.
+The reference implementation uses four alternating iterations.
+The resulting semantic residuals are restored to dense window
+responses, followed by overlapping-window reconstruction.
 
-The reference AP4 implementation performs four iterations.
-The resulting residual is projected back to dense window logits,
-followed by overlapping-window reconstruction.
+No additional model training is required.
 
-## Core Implementation
+## Supported Datasets
 
-- gealign_ov/models/geoalign_ap4_core.py
-- gealign_ov/models/geoalign_ov_core.py
-- gealign_ov/methods/relational_transport.py
-- gealign_ov/data/sliding_windows.py
-- gealign_ov/backbones/dinov3_timm.py
-- gealign_ov/adapters/segearth_input.py
-- gealign_ov/models/geoalign_ov_segmentor.py
-- gealign_ov/models/segearth_postprocess.py
+- LoveDA
+- Potsdam
+- UAVid
+- DLRSD
+- UDD5
+- Vaihingen
+- VDD
 
-## Dependencies
+## Installation
 
-Core Python dependencies are listed in requirements.txt.
-A compatible SegEarth-OV implementation is also required.
+See docs/INSTALL.md for environment setup, external model
+dependencies, and pretrained weight preparation.
 
-## Pretrained Models
+Pretrained model weights and datasets are not included.
 
-Model weights and datasets are NOT included.
-Users must obtain pretrained DINOv3 and SegEarth-OV weights separately.
+## Single-Image Inference
 
-The DINOv3 loader accepts a custom weight_path.
-Its default relative path is weights/dinov3/model.safetensors.
+Run from the WinCoP repository root:
+
+    python tools/inference.py \
+      --dataset loveda \
+      --image /path/to/image.png \
+      --output outputs/prediction.png \
+      --segearth-root /path/to/SegEarth-OV \
+      --dino-weights /path/to/dinov3/model.safetensors
+
+The output PNG contains semantic class IDs.
+
+## Dataset Evaluation
+
+    python tools/evaluate.py \
+      --dataset loveda \
+      --segearth-root /path/to/SegEarth-OV \
+      --dino-weights /path/to/dinov3/model.safetensors \
+      --output outputs/loveda_metrics.json
+
+The evaluator reports pooled mIoU, mean class accuracy,
+overall pixel accuracy, per-class IoU, and the confusion matrix.
+
+See docs/DATASETS.md for the supported datasets.
+
+## Implementation
+
+- gealign_ov/models/geoalign_ap4_core.py: WinCoP refinement
+- gealign_ov/models/geoalign_ov_core.py: shared model utilities
+- gealign_ov/methods/relational_transport.py: structural relations
+- gealign_ov/data/sliding_windows.py: window geometry
+- gealign_ov/backbones/dinov3_timm.py: DINOv3 features
+- gealign_ov/models/segearth_postprocess.py: prediction recovery
+- tools/inference.py: standalone image inference
+- tools/evaluate.py: dataset evaluation
 
 ## Reproducibility
 
-This initial release provides the WinCoP core implementation.
-Complete dataset-specific evaluation scripts and verified
-end-to-end reproduction instructions are not yet included.
+The implementation uses a frozen SegEarth-OV model,
+a frozen DINOv3 ViT-B/16 backbone, 224-pixel windows,
+a window stride of 112 pixels, and four refinement iterations.
 
-Dataset-specific Oracle configurations are separate from
-the reference AP4 implementation.
+The reference relation operator uses K=8 and tau=0.07,
+with residual coefficient alpha=0.75.
 
-## License
+Dataset-specific semantic prompts, preprocessing, and annotation
+handling follow the corresponding SegEarth-OV configurations.
 
-No open-source license has been selected yet.
+## Acknowledgments
+
+This project uses SegEarth-OV and DINOv3 as external
+pretrained model dependencies. Please follow their respective
+licensing and citation requirements.

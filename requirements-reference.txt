@@ -1,0 +1,15 @@
+# WinCoP reference environment
+# Python environment: GeoAlignFull
+# These are observed package versions,
+# not necessarily minimum supported versions.
+
+torch==2.1.2+cu118
+torchvision==0.16.2+cu118
+numpy==1.26.4
+timm==1.0.20
+safetensors==0.4.5
+mmengine==0.10.4
+mmsegmentation==1.2.2
+mmcv==2.1.0
+tqdm==4.65.2
+Pillow==11.3.0
